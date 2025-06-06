@@ -17,7 +17,7 @@ begin
     Readln(nombre);
     Writeln('Hola, ', nombre, '! Bienvenido al programa de ejemplo.');
     Writeln('Hola, ', nombre, '! Bienvenido al programa de ejemplo.');
-    Showmessage('Prueba');
+    Showmessage('Cambio este mensaje para probar');
 
     Writeln('Otra línea de ejemplo en Delphi.');
     Writeln('El valor de Pi es: ', Pi:0:2);
