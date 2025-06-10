@@ -30,6 +30,7 @@ end;
 procedure TDummyClass.DisplayInfo;
 begin
     Writeln(Format('Name: %s, Value: %d', [FName, FValue]));
+    showmessage('Nuevo mensaje');
 end;
 
 end.
