@@ -56,6 +56,19 @@ jobs:
 
       - name: Validar campos obligatorios
         run: |
+          # Mostrar número de issue y node_id
+          echo "Número de Issue: $ISSUE_NUMBER"
+          echo "Node ID: $NODE_ID"
+
+          # Verificar si hay proyectos vinculados
+          PROJECT_ITEMS=$(jq '.data.node.projectItems.nodes | length' response.json)
+          echo "Cantidad de proyectos vinculados: $PROJECT_ITEMS"
+
+          if [ "$PROJECT_ITEMS" -eq 0 ]; then
+            echo "::error::El Issue no está vinculado a ningún proyecto v2. Por favor, asígnalo antes de continuar."
+            exit 1
+          fi
+
           HORAS=$(jq -r '.data.node.projectItems.nodes[0].fieldValues.nodes[] | select(.field.name=="Horas") | .number' response.json)
           CASOLA=$(jq -r '.data.node.projectItems.nodes[0].fieldValues.nodes[] | select(.field.name=="CasoLA") | .number' response.json)
           echo "Valor del campo Horas: $HORAS"
