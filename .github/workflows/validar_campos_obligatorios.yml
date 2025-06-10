@@ -15,11 +15,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      
       - name: Obtener número del Issue vinculado
         id: issue
         run: |
           ISSUE_NUMBER=$(echo "${{ github.event.pull_request.body }}" | grep -oE '#[0-9]+' | head -n1 | tr -d '#')
+          echo "Número de Issue detectado: $ISSUE_NUMBER"
           if [ -z "$ISSUE_NUMBER" ]; then
             echo "No se encontró un issue vinculado en la descripción (usa 'Closes #123')"
             echo "::error::PR sin Issue vinculado."
@@ -32,14 +32,17 @@ jobs:
           curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/issues/${ISSUE_NUMBER} \
             > issue.json
-
-          echo "NODE_ID=$(jq -r '.node_id' issue.json)" >> $GITHUB_ENV
+          NODE_ID=$(jq -r '.node_id' issue.json)
+          echo "Node ID del Issue: $NODE_ID"
+          echo "NODE_ID=$NODE_ID" >> $GITHUB_ENV
 
       - name: Consultar campos del proyecto (GraphQL)
         run: |
           QUERY='{
             "query": "query { node(id: \"'$NODE_ID'\") { ... on Issue { projectItems(first: 10) { nodes { fieldValues(first: 10) { nodes { ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { name } } } ... on ProjectV2ItemFieldTextValue { text field { ... on ProjectV2FieldCommon { name } } } ... on ProjectV2ItemFieldSingleSelectValue { name field { ... on ProjectV2FieldCommon { name } } } } } } } } } }"
           }'
+          echo "Consulta GraphQL generada:"
+          echo "$QUERY"
           echo "$QUERY" > query.json
 
           curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -48,12 +51,15 @@ jobs:
 
       - name: Mostrar respuesta GraphQL
         run: |
+          echo "Respuesta GraphQL:"
           cat response.json
 
       - name: Validar campos obligatorios
         run: |
           HORAS=$(jq -r '.data.node.projectItems.nodes[0].fieldValues.nodes[] | select(.field.name=="Horas") | .number' response.json)
           CASOLA=$(jq -r '.data.node.projectItems.nodes[0].fieldValues.nodes[] | select(.field.name=="CasoLA") | .number' response.json)
+          echo "Valor del campo Horas: $HORAS"
+          echo "Valor del campo CasoLA: $CASOLA"
 
           if [ -z "$HORAS" ] || [ "$HORAS" == "null" ]; then
             echo "::error::El campo 'Horas' es obligatorio pero está vacío o no definido."
