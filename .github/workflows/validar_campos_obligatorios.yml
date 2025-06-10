@@ -53,7 +53,7 @@ jobs:
       - name: Validar campos obligatorios
         run: |
           HORAS=$(jq -r '.data.node.projectItems.nodes[0].fieldValues.nodes[] | select(.field.name=="Horas") | .number' response.json)
-          CASOLA=$(jq -r '.data.node.projectItems.nodes[0].fieldValues.nodes[] | select(.field.name=="CasoLA") | .text' response.json)
+          CASOLA=$(jq -r '.data.node.projectItems.nodes[0].fieldValues.nodes[] | select(.field.name=="CasoLA") | .number' response.json)
 
           if [ -z "$HORAS" ] || [ "$HORAS" == "null" ]; then
             echo "::error::El campo 'Horas' es obligatorio pero está vacío o no definido."
