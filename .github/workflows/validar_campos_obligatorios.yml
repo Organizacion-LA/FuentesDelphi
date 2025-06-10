@@ -38,7 +38,7 @@ jobs:
       - name: Consultar campos del proyecto (GraphQL)
         run: |
           QUERY='{
-            "query": "query { node(id: \"'$NODE_ID'\") { ... on Issue { projectItems(first: 10) { nodes { fieldValues(first: 10) { nodes { field { name } ... on ProjectV2ItemFieldNumberValue { number } ... on ProjectV2ItemFieldTextValue { text } } } } } } } }"
+            "query": "query { node(id: \"'$NODE_ID'\") { ... on Issue { projectItems(first: 10) { nodes { fieldValues(first: 10) { nodes { ... on ProjectV2ItemFieldNumberValue { number field { name } } ... on ProjectV2ItemFieldTextValue { text field { name } } ... on ProjectV2ItemFieldSingleSelectValue { name field { name } } } } } } } } }"
           }'
           echo "$QUERY" > query.json
 
