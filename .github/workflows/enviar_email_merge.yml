@@ -52,7 +52,8 @@ jobs:
             --arg responsable "$RESPONSABLE" \
             '{horas: $horas, casoLA: $casoLA, fecha: $fecha, responsable: $responsable}')
           echo "$EMAIL_JSON" > email.json
-          echo "EMAIL_JSON=$EMAIL_JSON" >> $GITHUB_ENV
+          EMAIL_JSON_ONELINE=$(echo "$EMAIL_JSON" | jq -c .)
+          echo "EMAIL_JSON=$EMAIL_JSON_ONELINE" >> $GITHUB_ENV
           echo "CASOLA=$CASOLA" >> $GITHUB_ENV
 
       - name: Enviar email con JSON
