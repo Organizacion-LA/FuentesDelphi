@@ -9,6 +9,7 @@ on:
       - reopened
       - labeled
       - unlabeled
+  workflow_dispatch:
 
 jobs:
   validar_campos:
