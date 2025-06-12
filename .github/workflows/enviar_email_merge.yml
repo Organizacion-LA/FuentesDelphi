@@ -1,0 +1,69 @@
+name: Enviar email tras merge a master
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  enviar_email:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extraer información del último merge
+        id: info
+        run: |
+          PR_NUMBER=$(jq -r '.[0].number' <(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?state=closed&base=master&sort=updated&direction=desc&per_page=1"))
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+
+          PR_DATA=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
+          echo "$PR_DATA" > pr.json
+
+          RESPONSABLE=$(jq -r '.merged_by.login' pr.json)
+          FECHA=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Obtener número de issue vinculado
+          ISSUE_NUMBER=$(jq -r '.body' pr.json | grep -oE '#[0-9]+' | head -n1 | tr -d '#')
+          echo "ISSUE_NUMBER=$ISSUE_NUMBER" >> $GITHUB_ENV
+
+          # Obtener campos del proyecto (igual que en el otro workflow)
+          ISSUE_NODE_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${ISSUE_NUMBER}" | jq -r '.node_id')
+
+          QUERY='{
+            "query": "query { node(id: \"'$ISSUE_NODE_ID'\") { ... on Issue { projectItems(first: 10) { nodes { fieldValues(first: 10) { nodes { ... on ProjectV2ItemFieldNumberValue { number field { ... on ProjectV2FieldCommon { name } } } } } } } } } }"
+          }'
+          echo "$QUERY" > query.json
+
+          curl -s -H "Authorization: Bearer ${{ secrets.MY_GITHUB_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d @query.json https://api.github.com/graphql > response.json
+
+          HORAS=$(jq -r '.data.node.projectItems.nodes[0].fieldValues.nodes[] | select(.field.name=="Horas") | .number' response.json)
+          CASOLA=$(jq -r '.data.node.projectItems.nodes[0].fieldValues.nodes[] | select(.field.name=="CasoLA") | .number' response.json)
+
+          # Construir el JSON para el email
+          EMAIL_JSON=$(jq -n \
+            --arg horas "$HORAS" \
+            --arg casoLA "$CASOLA" \
+            --arg fecha "$FECHA" \
+            --arg responsable "$RESPONSABLE" \
+            '{horas: $horas, casoLA: $casoLA, fecha: $fecha, responsable: $responsable}')
+          echo "$EMAIL_JSON" > email.json
+          echo "EMAIL_JSON=$EMAIL_JSON" >> $GITHUB_ENV
+          echo "CASOLA=$CASOLA" >> $GITHUB_ENV
+
+      - name: Enviar email con JSON
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.GMAIL_USER }}
+          password: ${{ secrets.GMAIL_PASS }}
+          subject: 'Facturación del caso ${{ env.CASOLA }}'
+          to: 'fseara22@gmail.com'
+          from: 'GitHub Actions <${{ secrets.GMAIL_USER }}>'
+          content_type: text/plain
+          body: ${{ env.EMAIL_JSON }}
