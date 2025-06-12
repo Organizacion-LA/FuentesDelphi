@@ -77,6 +77,11 @@ jobs:
             exit 1
           fi
 
+          if (( $(echo "$HORAS <= 0" | bc -l) )); then
+            echo "::error::El campo 'Horas' debe ser mayor que 0."
+            exit 1
+          fi
+
           if [ -z "$CASOLA" ] || [ "$CASOLA" == "null" ]; then
             echo "::error::El campo 'CasoLA' es obligatorio pero está vacío o no definido."
             exit 1
