@@ -28,5 +28,7 @@ begin
     Writeln('Hola, ', nombre, ', bienvenido al programa.');
     Writeln('Hola, ', apellido, ', bienvenido al programa.'); // jfiguera
 
+    Writeln('Hola, ', apellido, ', bienvenido al programa.'); // javier
+
 
 end.
